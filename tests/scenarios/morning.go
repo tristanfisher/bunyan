@@ -94,75 +94,73 @@ func Morning() error {
 	// this allows zones to terminate, while preserving the "base" manager instance or zone
 	chainID := bunyan.ChainID("example_chain using its own context")
 	morningRitualChain := zoneMorning.NewChain(chainContext, chainID)
-	//
-	//// todo: test timingCopy in a goroutine
-	//// prove we can make a simple copy and operate off of it
+
+	// todo: test timingCopy in a goroutine
+	// prove we can make a simple copy and operate off of it
 	morningRitualChainCopy, err := morningRitualChain.TimingCopy()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	//// note report before the span has anything put on it!  this is safe to call at any point
-	//// even on a copy
+	// note report before the span has anything put on it!  this is safe to call at any point
+	// even on a copy
 
-	// this is what fails apparently
 	morningRitualReport, err := morningRitualChainCopy.Report()
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("morning ritual report => ", morningRitualReport)
 
-	//
-	//snoozeSpan := morningRitualChain.NewSpan("sleep", "snooze", bunyan.SpanFields{
-	//	ParentSpanID: "",
-	//	Comment:      []string{"hit snooze button"},
-	//})
-	//snoozeSpan.Start()
-	//// take a little nap
-	//time.Sleep(100 * time.Millisecond)
-	//snoozeSpan.End()
-	//
-	//coffeeSpan := morningRitualChain.NewSpan("wakeup_tasks", "machine_on", bunyan.SpanFields{
-	//	ParentSpanID: "coffee", // note use as parent, not previously stated
-	//})
-	//
-	//time.Sleep(10 * time.Millisecond)
-	//// coffee machine still running!
-	//showerSpan := morningRitualChain.NewSpan("wakeup_tasks", "shower", bunyan.SpanFields{})
-	//time.Sleep(50 * time.Millisecond)
-	//showerSpan.End()
-	//
-	//dressSpan := morningRitualChain.NewSpan("wakeup_tasks", "get dressed", bunyan.SpanFields{})
-	//dressSpan.Start()
-	//
-	//pickClothesSpan := morningRitualChain.NewSpan("wakeup_tasks", "pick clothes", bunyan.SpanFields{
-	//	ParentSpanID: "get dressed",
-	//})
-	//pickClothesSpan.Start()
-	//time.Sleep(2 * time.Millisecond)
-	//pickClothesSpan.End()
-	//
-	//// coffee's reaady!
-	//coffeeSpan.End()
-	//
-	//putClothesOnSpan := morningRitualChain.NewSpan("wakeup_tasks", "put clothes on", bunyan.SpanFields{
-	//	ParentSpanID: "get dressed",
-	//})
-	//putClothesOnSpan.Start()
-	//time.Sleep(2 * time.Millisecond)
-	//putClothesOnSpan.End()
-	//
-	//dressSpan.End()
-	//
-	//morningRitualChain.Close()
-	//
-	//// zone close will close a chain, which cascades "downstream" to Chain, etc
-	//err = zoneMorning.Close()
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//testPrintln(zoneMorning.Report())
+	snoozeSpan := morningRitualChain.NewSpan("sleep", "snooze", bunyan.SpanFields{
+		ParentSpanID: "",
+		Comment:      []string{"hit snooze button"},
+	})
+	snoozeSpan.Start()
+	// take a little nap
+	time.Sleep(100 * time.Millisecond)
+	snoozeSpan.End()
+
+	coffeeSpan := morningRitualChain.NewSpan("wakeup_tasks", "machine_on", bunyan.SpanFields{
+		ParentSpanID: "coffee", // note use as parent, not previously stated
+	})
+
+	time.Sleep(10 * time.Millisecond)
+	// coffee machine still running!
+	showerSpan := morningRitualChain.NewSpan("wakeup_tasks", "shower", bunyan.SpanFields{})
+	time.Sleep(50 * time.Millisecond)
+	showerSpan.End()
+
+	dressSpan := morningRitualChain.NewSpan("wakeup_tasks", "get dressed", bunyan.SpanFields{})
+	dressSpan.Start()
+
+	pickClothesSpan := morningRitualChain.NewSpan("wakeup_tasks", "pick clothes", bunyan.SpanFields{
+		ParentSpanID: "get dressed",
+	})
+	pickClothesSpan.Start()
+	time.Sleep(2 * time.Millisecond)
+	pickClothesSpan.End()
+
+	// coffee's ready!
+	coffeeSpan.End()
+
+	putClothesOnSpan := morningRitualChain.NewSpan("wakeup_tasks", "put clothes on", bunyan.SpanFields{
+		ParentSpanID: "get dressed",
+	})
+	putClothesOnSpan.Start()
+	time.Sleep(2 * time.Millisecond)
+	putClothesOnSpan.End()
+
+	dressSpan.End()
+
+	morningRitualChain.Close()
+
+	// zone close will close a chain, which cascades "downstream" to Chain, etc
+	err = zoneMorning.Close()
+	if err != nil {
+		return err
+	}
+
+	testPrintln(zoneMorning.Report())
 
 	<-holdOpen.Done()
 
