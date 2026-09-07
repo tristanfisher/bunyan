@@ -249,12 +249,10 @@ func (c *chain) TimingCopy() (*chain, error) {
 			return &chain{}, errors.New("chain context canceled")
 		// we provide a chainCopyChan as a target to read (vs. c.copyComplete)
 		case c.dataAccessChan <- dataAccessMessage{Type: damRequestCopy, ChainChan: chainCopyChan}:
-			// read from channel, which will return when a copy is ready
-			chainCopy = <-chainCopyChan
-
 			select {
+			// read from channel, which will return when a copy is ready
 			case chainCopy = <-chainCopyChan:
-				// success
+				return chainCopy, nil
 			case <-time.After(30 * time.Second):
 				// we should never take this long - raise an issue if resource constraints result in this much of a delay
 				return &chain{}, errors.New("timeout waiting for chain copy")
@@ -301,8 +299,6 @@ func (c *chain) status() (*ChainReport, error) {
 	// get a copy of our chain for potential modification and lock-free/no-concurrency-concern operations
 	chainCopy, err := c.TimingCopy()
 	if err != nil {
-		fmt.Println("TimingCopy error")
-
 		return &ChainReport{}, err
 	}
 
@@ -387,6 +383,12 @@ func (c *chain) status() (*ChainReport, error) {
 
 	// sort category names lexicographically
 	slices.Sort(categoryNames)
+
+	// if no spans were recorded, pay for initialization as otherwise we can return garbage or negative max
+	if totalEnd.IsZero() || totalStart.Equal(time.Unix(1<<62, 0)) {
+		totalStart = time.Time{}
+		totalEnd = time.Time{}
+	}
 
 	// span calculation
 	// totalDuration gets us our width

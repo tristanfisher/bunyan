@@ -27,6 +27,11 @@ func (c *chain) getCopy() *chain {
 
 	ch.chainCtx = ctx2
 	ch.cancelFn = ctx2Cancel
+	// by definition, copies are default closed
+	// as they do not have a handleLifetime() call attached (pre-ready will never move this copy to a ready state!).
+	// if you need the functionality to work off a "fork" of *chain,
+	// open a PR with different semantics for chain vs. fork.
+	ch.isClosed.Store(true)
 	return ch
 }
 
