@@ -50,7 +50,6 @@ func Morning() error {
 	defer chainContextCancel()
 
 	worldChain := zoneMorning.NewChain(chainContext, "world_chain")
-	_ = worldChain
 
 	// repeat category to test that existing span categories work as intended
 	sunCategoryShared := "sun"
@@ -97,19 +96,16 @@ func Morning() error {
 
 	// todo: test timingCopy in a goroutine
 	// prove we can make a simple copy and operate off of it
-	morningRitualChainCopy, err := morningRitualChain.TimingCopy()
+	copyExample, err := morningRitualChain.TimingCopy()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// note report before the span has anything put on it!  this is safe to call at any point
-	// even on a copy
-
-	morningRitualReport, err := morningRitualChainCopy.Report()
+	// note report before the span has anything put on it!  this is safe to call at any point, even on a copy
+	_, err = copyExample.Report()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("morning ritual report => ", morningRitualReport)
 
 	snoozeSpan := morningRitualChain.NewSpan("sleep", "snooze", bunyan.SpanFields{
 		ParentSpanID: "",
