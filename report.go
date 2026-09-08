@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-type ZoneReport struct{}
-
 type SpanReport struct {
 	SpanID       SpanID
 	ParentSpanID SpanID
@@ -45,9 +43,7 @@ type ChainReport struct {
 	Warnings      []string
 }
 
-func (cr ChainReport) FlameText() {
-
-}
+func (cr ChainReport) FlameText() {}
 
 var chainTemplateFunc = template.FuncMap{
 	"increment": func(i int) int {
@@ -103,6 +99,63 @@ type CategoriesReport struct {
 	// expected to match category.table
 	CategoryTable map[string]entries
 	Comment       []string
+}
+
+type ZoneReport struct {
+	ID           ZoneID
+	ChainReports []ChainReport
+}
+
+var zoneTemplateFunc = template.FuncMap{
+	"increment": func(i int) int {
+		i++
+		return i
+	},
+}
+
+const zoneReportTemplate = `=== ZONE REPORT: {{ .ID }} ===
+{{- if .Warnings }}
+Warnings:
+{{- range .Warnings }}
+- {{ . }}
+{{- end }}
+{{- end }}
+Total Duration: {{ .TotalDuration }}
+Chains ({{ len .Chains }}):
+{{- range $i, $chain := .Chains }}
+
+--- Chain [{{ increment $i }}]: {{ $chain.ID }} ---
+Total Duration: {{ $chain.TotalDuration }}
+Categories ({{ len $chain.CategoryNames }}): {{ range $chain.CategoryNames }}[{{ . }}] {{ end }}
+Span Timings:
+{{- range $j, $span := $chain.SpanTimings }}
+  {{ increment $j }}. Span: {{ $span.Span }} | Duration: {{ $span.Duration }}
+{{- else }}
+  No spans recorded.
+{{- end }}
+{{- else }}
+  No chains recorded.
+{{- end }}
+===================================
+`
+
+func (zr ZoneReport) String() string {
+	t, err := template.New("zoneReport").Funcs(zoneTemplateFunc).Parse(zoneReportTemplate)
+	if err != nil {
+		return fmt.Errorf("<error templating report: %w>", err).Error()
+	}
+
+	stringBuf := bytes.Buffer{}
+	err = t.Execute(&stringBuf, zr)
+	if err != nil {
+		return fmt.Errorf("<error executing template for report: %w>", err).Error()
+	}
+	return stringBuf.String()
+}
+
+func (zr ZoneReport) ToJSON() (string, error) {
+	b, err := json.Marshal(zr)
+	return string(b), err
 }
 
 func processCategoryTable(table map[string]entries) {

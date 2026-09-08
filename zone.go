@@ -125,6 +125,17 @@ func (z *zone) Close() error {
 	return nil
 }
 
-func (z *zone) Report() ZoneReport {
-	return ZoneReport{}
+func (z *zone) Report() (ZoneReport, error) {
+	z.Lock()
+	defer z.Unlock()
+
+	chainReport, err := z.chain.Report()
+	if err != nil {
+		return ZoneReport{}, err
+	}
+
+	return ZoneReport{
+		ID:           z.id,
+		ChainReports: []ChainReport{*chainReport},
+	}, nil
 }
