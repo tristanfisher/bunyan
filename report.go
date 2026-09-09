@@ -41,9 +41,8 @@ type ChainReport struct {
 	LongestSpan   spanAnalysis
 	SpanTimings   []spanAnalysis
 	Warnings      []string
+	FlameText     string
 }
-
-func (cr ChainReport) FlameText() {}
 
 var chainTemplateFunc = template.FuncMap{
 	"increment": func(i int) int {
@@ -53,7 +52,7 @@ var chainTemplateFunc = template.FuncMap{
 }
 
 // chainReportTemplate gives us a string-based reporting.  the increment function is used for 1-based indexing.
-const chainReportTemplate = `ID: {{ .ID }}
+const chainReportTemplate = `=== CHAIN REPORT: {{ .ID }} ===
 Warnings:
 {{- range .Warnings }}
 - {{ . }}
@@ -102,8 +101,10 @@ type CategoriesReport struct {
 }
 
 type ZoneReport struct {
-	ID           ZoneID
-	ChainReports []ChainReport
+	ID            ZoneID
+	TotalDuration time.Duration
+	Chains        []ChainReport
+	Warnings      []string
 }
 
 var zoneTemplateFunc = template.FuncMap{
@@ -156,15 +157,4 @@ func (zr ZoneReport) String() string {
 func (zr ZoneReport) ToJSON() (string, error) {
 	b, err := json.Marshal(zr)
 	return string(b), err
-}
-
-func processCategoryTable(table map[string]entries) {
-	fmt.Println("## processCategoryTable")
-	for categoryName, entries := range table {
-		fmt.Println("reporting: ", categoryName)
-		fmt.Println("reporting: ", entries)
-	}
-	fmt.Println("## /processCategoryTable")
-
-	// process all start/end out of table to make flamegraph
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -228,7 +229,7 @@ func (c *chain) TimingCopy() (*chain, error) {
 	// chain closed, potentially even closed while waiting for initialization
 	// if our chain is closed, we bypass sending to a channel as otherwise we'll deadlock
 	var chainCopy *chain
-	if c.isClosed.Load() {
+	if c.isClosed.Load() || c.chainCtx.Err() != nil {
 		// this *must* match handleLifetime, DAMRequestCopy
 		chainCopy = c.getCopy()
 	} else {
@@ -448,9 +449,9 @@ func (c *chain) status() (*ChainReport, error) {
 		stack = append(stack, rootSpans[i])
 	}
 
-	// todo: move into print function instead
-	fmt.Printf("%-20s | %-6s | %-10s | %-10s\n", "Span ID", "Depth", "Offset %", "Width %")
-	fmt.Println("---------------------------------------------------------------")
+	var flameBuf strings.Builder
+	flameBuf.WriteString(fmt.Sprintf("%-20s | %-6s | %-10s | %-10s\n", "Span ID", "Depth", "Offset %", "Width %"))
+	flameBuf.WriteString("---------------------------------------------------------------\n")
 
 	for len(stack) > 0 {
 		// pop off our stack
@@ -458,14 +459,17 @@ func (c *chain) status() (*ChainReport, error) {
 		// remove top element in preparation of next loop
 		stack = stack[:len(stack)-1]
 
-		widthPercent := (curr.Duration / totalDuration).Seconds() * 100
-		offsetPercent := (curr.FlameCalculations.Offset / totalDuration).Seconds() * 100
+		var widthPercent, offsetPercent float64
+		if totalDuration > 0 {
+			widthPercent = (curr.Duration / totalDuration).Seconds() * 100
+			offsetPercent = (curr.FlameCalculations.Offset / totalDuration).Seconds() * 100
+		}
 
-		fmt.Printf("%-20s | %-6d | %-10.2f | %-10.2f\n",
+		flameBuf.WriteString(fmt.Sprintf("%-20s | %-6d | %-10.2f | %-10.2f\n",
 			curr.Span.spanID,
 			curr.FlameCalculations.Depth,
 			offsetPercent,
-			widthPercent)
+			widthPercent))
 
 		// sort children
 		children := adjacencyList[curr.Span.spanID]
@@ -477,7 +481,6 @@ func (c *chain) status() (*ChainReport, error) {
 			children[i].FlameCalculations.Depth = curr.FlameCalculations.Depth + 1
 			stack = append(stack, children[i])
 		}
-
 	}
 
 	report := &ChainReport{
@@ -490,8 +493,10 @@ func (c *chain) status() (*ChainReport, error) {
 			Comment:       *chainCopy.categories.comment,
 		},
 		CategoryNames: categoryNames,
+		LongestSpan:   spanAnalysis{},
 		SpanTimings:   spanAnalysisTimings,
 		Warnings:      warnings,
+		FlameText:     flameBuf.String(),
 	}
 
 	return report, nil

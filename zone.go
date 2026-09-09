@@ -3,6 +3,7 @@ package bunyan
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 // ZoneID is a wrapped string for future portability reasons
@@ -129,13 +130,37 @@ func (z *zone) Report() (ZoneReport, error) {
 	z.Lock()
 	defer z.Unlock()
 
-	chainReport, err := z.chain.Report()
-	if err != nil {
-		return ZoneReport{}, err
+	zr := ZoneReport{
+		ID:     z.id,
+		Chains: make([]ChainReport, 0),
 	}
 
-	return ZoneReport{
-		ID:           z.id,
-		ChainReports: []ChainReport{*chainReport},
-	}, nil
+	if z.chain == nil {
+		return zr, nil
+	}
+
+	chainReport, err := z.chain.Report()
+	if err != nil {
+		return zr, err
+	}
+
+	zr.Chains = append(zr.Chains, *chainReport)
+	zr.Warnings = append(zr.Warnings, chainReport.Warnings...)
+
+	// calculate overall total duration from start to end timestamps across chains
+	var earliestStart, latestEnd time.Time
+	for _, cr := range zr.Chains {
+		if !cr.Start.IsZero() && (earliestStart.IsZero() || cr.Start.Before(earliestStart)) {
+			earliestStart = cr.Start
+		}
+		if !cr.End.IsZero() && (latestEnd.IsZero() || cr.End.After(latestEnd)) {
+			latestEnd = cr.End
+		}
+	}
+
+	if !earliestStart.IsZero() && !latestEnd.IsZero() && latestEnd.After(earliestStart) {
+		zr.TotalDuration = latestEnd.Sub(earliestStart)
+	}
+
+	return zr, nil
 }
