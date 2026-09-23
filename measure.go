@@ -9,9 +9,9 @@ import (
 // ManagerID is a wrapped string for future portability reasons
 type ManagerID string
 
-// manager provides functionality for long-term / multiple zone management.
+// manager provides functionality for long-term / multiple Zone management.
 // This is particularly useful for processes that handle requests, like networked servers.
-// In such usages, each request zone has resources to track, which can be rolled up to a more
+// In such usages, each request Zone has resources to track, which can be rolled up to a more
 // complete view (in a manager).
 type manager struct {
 	// ctx is the root context propagated to all zones
@@ -21,7 +21,7 @@ type manager struct {
 	id ManagerID
 
 	// pointer to zone for association / linking
-	zone *map[ZoneID]*zone
+	zone *map[ZoneID]*Zone
 
 	// errorChannel is used for runtime errors in goroutines
 	errorChannel        chan error
@@ -34,13 +34,13 @@ func NewManager(ctx context.Context, id ManagerID, errorChannelHandler func(erro
 	m := manager{
 		ctx:                 ctx,
 		id:                  id,
-		zone:                new(map[ZoneID]*zone),
+		zone:                new(map[ZoneID]*Zone),
 		errorChannel:        make(chan error, 25),
 		errorChannelHandler: errorChannelHandler,
 		Mutex:               sync.Mutex{},
 	}
 
-	mZ := make(map[ZoneID]*zone)
+	mZ := make(map[ZoneID]*Zone)
 	m.zone = &mZ
 
 	if errorChannelHandler != nil {
@@ -88,12 +88,12 @@ func (m *manager) SetID(id ManagerID) {
 
 // NewZone initializes a new zone and associates it with a manager
 // No goroutines or work is put in the background.  This is simply initialization.
-func (m *manager) NewZone(ctx context.Context, zoneID ZoneID) (*zone, error) {
+func (m *manager) NewZone(ctx context.Context, zoneID ZoneID) (*Zone, error) {
 	m.Lock()
 	defer m.Unlock()
 
 	if _, ok := (*m.zone)[zoneID]; ok {
-		return &zone{}, errors.New("zone id already exists")
+		return &Zone{}, errors.New("zone id already exists")
 	}
 
 	// provided context is wrapped to provide graceful shutdown
@@ -106,7 +106,7 @@ func (m *manager) NewZone(ctx context.Context, zoneID ZoneID) (*zone, error) {
 		wrappedCtxCancel()
 	}(m.ctx)
 
-	zone := &zone{
+	zone := &Zone{
 		// context.Context is thread-safe.  no lock required.
 		// managerCtx is passed in to trigger a graceful shutdown
 		managerCtx:          m.ctx,

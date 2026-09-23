@@ -9,8 +9,8 @@ import (
 // ZoneID is a wrapped string for future portability reasons
 type ZoneID string
 
-// zone is a container for a period of measurement, contrasted with manager.
-type zone struct {
+// Zone is a container for a period of measurement, contrasted with manager.
+type Zone struct {
 	managerCtx context.Context
 
 	zoneCtx       context.Context
@@ -29,13 +29,13 @@ type zone struct {
 }
 
 // SetID allows for overriding the initial spanID of a session
-func (z *zone) SetID(id ZoneID) {
+func (z *Zone) SetID(id ZoneID) {
 	z.Lock()
 	defer z.Unlock()
 	z.id = id
 }
 
-func (z *zone) GetID() ZoneID {
+func (z *Zone) GetID() ZoneID {
 	z.Lock()
 	defer z.Unlock()
 	return z.id
@@ -48,7 +48,7 @@ func (z *zone) GetID() ZoneID {
 // NewChain start a background workers to handle spans, returning synchronously
 // for usage.  Chains can be added to Zones, Spans can be added to Zones
 // at any point from this point forward.
-func (z *zone) NewChain(ctx context.Context, id ChainID) chain {
+func (z *Zone) NewChain(ctx context.Context, id ChainID) chain {
 
 	c := newChain(ctx, id)
 	z.chain = c
@@ -113,7 +113,7 @@ func (z *zone) NewChain(ctx context.Context, id ChainID) chain {
 }
 
 // Close irreversibly terminates a zone, as well as all underlying chains
-func (z *zone) Close() error {
+func (z *Zone) Close() error {
 	// tell the chain to close, which will shut down the spans
 	z.chain.Close()
 
@@ -126,7 +126,7 @@ func (z *zone) Close() error {
 	return nil
 }
 
-func (z *zone) Report() (ZoneReport, error) {
+func (z *Zone) Report() (ZoneReport, error) {
 	z.Lock()
 	defer z.Unlock()
 

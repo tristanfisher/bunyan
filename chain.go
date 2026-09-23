@@ -72,7 +72,7 @@ type chain struct {
 
 	//
 	// cancellation context
-	// root -> zone -> chain -> span
+	// root -> Zone -> chain -> span
 	//                 ^^^^^
 	chainCtx context.Context
 	cancelFn context.CancelFunc

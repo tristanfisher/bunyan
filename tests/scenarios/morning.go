@@ -10,7 +10,7 @@ import (
 
 // time.sleep in example to simulate a timeline / "work"
 
-func Morning() error {
+func Morning() (*bunyan.Zone, error) {
 
 	testDuration := 10 * time.Second
 	bg := context.Background()
@@ -153,12 +153,10 @@ func Morning() error {
 	// zone close will close a chain, which cascades "downstream" to Chain, etc
 	err = zoneMorning.Close()
 	if err != nil {
-		return err
+		return &bunyan.Zone{}, err
 	}
-
-	testPrintln(zoneMorning.Report())
 
 	<-holdOpen.Done()
 
-	return nil
+	return zoneMorning, nil
 }
