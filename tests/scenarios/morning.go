@@ -1,11 +1,12 @@
 package scenarios
 
 import (
-	"bunyan"
 	"context"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/tristanfisher/bunyan"
 )
 
 // time.sleep in example to simulate a timeline / "work"

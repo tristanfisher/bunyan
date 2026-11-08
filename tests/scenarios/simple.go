@@ -1,11 +1,12 @@
 package scenarios
 
 import (
-	"bunyan"
 	"context"
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/tristanfisher/bunyan"
 )
 
 func Simple() error {
